@@ -6,6 +6,8 @@
 float timeOut = MAX_DISTANCE * 60;
 int soundVelocity = 340; // define sound speed=340m/s
 
+const float DANGER_DIST = 25.0;
+
 void setup() {
   pinMode(trigPin,OUTPUT);// set trigPin to output mode
   pinMode(echoPin,INPUT); // set echoPin to input mode
@@ -13,9 +15,28 @@ void setup() {
 }
 
 void loop() {
+
+  float catDist = getSonar();
+  printDist(catDist);
+
+  if (catDist < DANGER_DIST) {
+    scareCat();
+  }
+
   delay(100); // Wait 100ms between pings (about 20 pings/sec). 29ms should be the shortest delay between pings.
-  Serial.print("Ping: ");
-  Serial.print(getSonar()); // Send ping, get distance in cm and print result (0 = outside set distance range)
+}
+
+
+void scareCat() {
+  Serial.print("CAT IS IN THE DANGER ZONE");
+  // play lights
+  // play sound
+  // other things to freak the cat out
+}
+
+void printDist(float distance) {
+  Serial.print("Distance: ");
+  Serial.print(distance); // Send ping, get distance in cm and print result (0 = outside set distance range)
   Serial.println("cm");
 }
 
