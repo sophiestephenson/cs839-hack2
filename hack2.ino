@@ -29,9 +29,17 @@ void loop() {
 
 void scareCat() {
   Serial.print("CAT IS IN THE DANGER ZONE");
-  // play lights
-  // play sound
+  flashLights();
+  playSound();
   // other things to freak the cat out
+}
+
+void flashLights() {
+  // TODO
+}
+
+void playSound() {
+  // TODO
 }
 
 void printDist(float distance) {
