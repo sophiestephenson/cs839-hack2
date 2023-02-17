@@ -1,6 +1,13 @@
 #define trigPin 13 // define TrigPin
 #define echoPin 14 // define EchoPin.
+#define buzzerPin 12 // define BuzzerPin.
 #define MAX_DISTANCE 200 // Maximum sensor distance is rated at 400-500cm.
+
+#include <WiFi.h>
+#include <HTTPClient.h>
+  
+const char* ssid = "Galaxy";
+const char* password = "";
 
 // define the timeOut according to the maximum range. timeOut= 2*MAX_DISTANCE /100 /340 *1000000 = MAX_DISTANCE*58.8
 float timeOut = MAX_DISTANCE * 60;
@@ -8,10 +15,30 @@ int soundVelocity = 340; // define sound speed=340m/s
 
 const float DANGER_DIST = 25.0;
 
+bool inDangerZone = false;
+
+const int    HTTP_PORT   = 80;
+const String HTTP_METHOD = "GET"; // or "POST"
+const char   HOST_NAME[] = "google.com"; // hostname of web server:
+const String PATH_NAME   = "";
+
+const String IFTTT_URL = "http://maker.ifttt.com/trigger/sensor_status/with/key/bc3z7e6-EAtEmsTx3FrdgJ"; //TODO FILL IN
+
 void setup() {
-  pinMode(trigPin,OUTPUT);// set trigPin to output mode
-  pinMode(echoPin,INPUT); // set echoPin to input mode
   Serial.begin(9600); // Open serial monitor at 9600 baud to see ping results.
+  pinMode(trigPin,OUTPUT);// set trigPin to output mode
+  pinMode(buzzerPin,OUTPUT); // Set Buzzer pin to output mode
+  pinMode(echoPin,INPUT); // set echoPin to input mode
+
+
+  WiFi.begin(ssid, password);
+  
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(1000);
+    Serial.println("Connecting to WiFi..");
+  }
+  
+  Serial.println("Connected to the WiFi network");
 }
 
 void loop() {
@@ -19,27 +46,45 @@ void loop() {
   float catDist = getSonar();
   printDist(catDist);
 
-  if (catDist < DANGER_DIST) {
-    scareCat();
+  // SET STATE, DO ONETIME ACTIONS
+  if (catDist < DANGER_DIST && !inDangerZone) {
+    inDangerZone = true;
+    startBuzzer();
+    textOwner();
+  }
+  else if (catDist > DANGER_DIST && inDangerZone) {
+    inDangerZone = false;
+    stopBuzzer();
   }
 
   delay(100); // Wait 100ms between pings (about 20 pings/sec). 29ms should be the shortest delay between pings.
 }
 
 
-void scareCat() {
-  Serial.print("CAT IS IN THE DANGER ZONE");
-  flashLights();
-  playSound();
-  // other things to freak the cat out
+void startBuzzer() {
+  float sinVal; // Define a variable to save sine value
+  int toneVal; // Define a variable to save sound frequency
+  
+  float x = 180;
+  sinVal = sin(x * (PI / 180));
+  toneVal = 2000 + sinVal * 500; 
+
+  ledcAttachPin(buzzerPin, toneVal);
+  tone(buzzerPin, toneVal);
 }
 
-void flashLights() {
-  // TODO
+void stopBuzzer() {
+  ledcDetachPin(buzzerPin);
 }
 
-void playSound() {
-  // TODO
+void textOwner() {
+
+  if ((WiFi.status() == WL_CONNECTED)) {
+    HTTPClient http;
+    http.begin(IFTTT_URL);
+    http.GET();
+    http.end();   
+  }
 }
 
 void printDist(float distance) {
