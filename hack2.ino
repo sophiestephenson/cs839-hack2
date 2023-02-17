@@ -46,31 +46,46 @@ void loop() {
   float catDist = getSonar();
   printDist(catDist);
 
-  // SET STATE, DO ONETIME ACTIONS
-  if (catDist < DANGER_DIST && !inDangerZone) {
-    inDangerZone = true;
-    startBuzzer();
-    textOwner();
-  }
-  else if (catDist > DANGER_DIST && inDangerZone) {
-    inDangerZone = false;
-    stopBuzzer();
-  }
+  if (catDist != 0) {
 
+    // SET STATE, DO ONETIME ACTIONS
+    if (catDist <= DANGER_DIST && !inDangerZone) {
+      inDangerZone = true;
+      startBuzzer();
+      textOwner();
+    }
+    else if (catDist > DANGER_DIST && inDangerZone) {
+      inDangerZone = false;
+      stopBuzzer();
+    }
+
+    // LOOPS WHILE IN DANGER ZONE
+    //if (inDangerZone) {
+     // setBuzzerTone(catDist);
+    //}
+
+  } else {
+    Serial.print("IT IS ZERO");
+  }
   delay(100); // Wait 100ms between pings (about 20 pings/sec). 29ms should be the shortest delay between pings.
 }
 
 
 void startBuzzer() {
-  float sinVal; // Define a variable to save sine value
-  int toneVal; // Define a variable to save sound frequency
-  
-  float x = 180;
-  sinVal = sin(x * (PI / 180));
-  toneVal = 2000 + sinVal * 500; 
-
-  ledcAttachPin(buzzerPin, toneVal);
+  int x = 0;
+  float sinVal = sin(x * (PI / 180));
+  int toneVal = 2000 + sinVal * 500;
+  //long toneVal = map(DANGER_DIST, 0, 25, 140, 220);
+  ledcAttachPin(buzzerPin, 0);
   tone(buzzerPin, toneVal);
+}
+
+void setBuzzerTone(float catDist) {
+  long x = map(catDist, 0, 25, 360, 0);
+  float sinVal = sin(x * (PI / 180));
+  int toneVal = 2000 + sinVal * 500;
+  tone(buzzerPin, toneVal);
+  Serial.print(toneVal);
 }
 
 void stopBuzzer() {
