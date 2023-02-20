@@ -5,24 +5,24 @@
 
 #include <WiFi.h>
 #include <HTTPClient.h>
-  
-const char* ssid = "Galaxy";
-const char* password = "";
 
-// define the timeOut according to the maximum range. timeOut= 2*MAX_DISTANCE /100 /340 *1000000 = MAX_DISTANCE*58.8
+// STATE
+const float DANGER_DIST = 25.0;
+bool inDangerZone = false;
+  
+// SONAR STUFF
 float timeOut = MAX_DISTANCE * 60;
 int soundVelocity = 340; // define sound speed=340m/s
 
-const float DANGER_DIST = 25.0;
-
-bool inDangerZone = false;
-
+// WEB STUFF
+const char* ssid = "Galaxy";
+const char* password = "";
 const int    HTTP_PORT   = 80;
 const String HTTP_METHOD = "GET"; // or "POST"
 const char   HOST_NAME[] = "google.com"; // hostname of web server:
 const String PATH_NAME   = "";
 
-const String IFTTT_URL = "http://maker.ifttt.com/trigger/sensor_status/with/key/bc3z7e6-EAtEmsTx3FrdgJ"; //TODO FILL IN
+const String IFTTT_URL = "http://maker.ifttt.com/trigger/sensor_status/with/key/bc3z7e6-EAtEmsTx3FrdgJ";
 
 void setup() {
   Serial.begin(9600); // Open serial monitor at 9600 baud to see ping results.
@@ -30,7 +30,7 @@ void setup() {
   pinMode(buzzerPin,OUTPUT); // Set Buzzer pin to output mode
   pinMode(echoPin,INPUT); // set echoPin to input mode
 
-
+  // Set up WiFi
   WiFi.begin(ssid, password);
   
   while (WiFi.status() != WL_CONNECTED) {
@@ -42,31 +42,24 @@ void setup() {
 }
 
 void loop() {
-
   float catDist = getSonar();
   printDist(catDist);
 
-  if (catDist != 0) {
-
-    // SET STATE, DO ONETIME ACTIONS
+  if (catDist != 0) { // Avoid 0 issue
+    
     if (catDist <= DANGER_DIST && !inDangerZone) {
       inDangerZone = true;
       startBuzzer();
       textOwner();
     }
+    
     else if (catDist > DANGER_DIST && inDangerZone) {
       inDangerZone = false;
       stopBuzzer();
     }
 
-    // LOOPS WHILE IN DANGER ZONE
-    //if (inDangerZone) {
-     // setBuzzerTone(catDist);
-    //}
-
-  } else {
-    Serial.print("IT IS ZERO");
-  }
+  } 
+  
   delay(100); // Wait 100ms between pings (about 20 pings/sec). 29ms should be the shortest delay between pings.
 }
 
@@ -75,7 +68,6 @@ void startBuzzer() {
   int x = 0;
   float sinVal = sin(x * (PI / 180));
   int toneVal = 2000 + sinVal * 500;
-  //long toneVal = map(DANGER_DIST, 0, 25, 140, 220);
   ledcAttachPin(buzzerPin, 0);
   tone(buzzerPin, toneVal);
 }
@@ -93,7 +85,6 @@ void stopBuzzer() {
 }
 
 void textOwner() {
-
   if ((WiFi.status() == WL_CONNECTED)) {
     HTTPClient http;
     http.begin(IFTTT_URL);
