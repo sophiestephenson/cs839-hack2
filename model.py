@@ -1,5 +1,7 @@
 import serial
 
-ser = serial.Serial('/dev/cu.wchusbserial110', 9600)
+port = '/dev/cu.wchusbserial110'
+
+ser = serial.Serial(port, 9600)
 ser.readline()
 
