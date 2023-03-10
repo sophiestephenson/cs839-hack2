@@ -43,6 +43,7 @@ void setup() {
 
 void loop() {
   float catDist = getSonar();
+  printDist(catDist);
 
   if (catDist != 0) { // Avoid 0 issue
     
@@ -50,7 +51,6 @@ void loop() {
       inDangerZone = true;
       startBuzzer();
       textOwner();
-      printDist(catDist);
     }
     
     else if (catDist > DANGER_DIST && inDangerZone) {
