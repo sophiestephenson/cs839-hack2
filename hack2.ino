@@ -31,19 +31,18 @@ void setup() {
   pinMode(echoPin,INPUT); // set echoPin to input mode
 
   // Set up WiFi
-  WiFi.begin(ssid, password);
+  //WiFi.begin(ssid, password);
   
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(1000);
-    Serial.println("Connecting to WiFi..");
-  }
+  //while (WiFi.status() != WL_CONNECTED) {
+    //delay(1000);
+  //  Serial.println("Connecting to WiFi..");
+  //}
   
-  Serial.println("Connected to the WiFi network");
+  //Serial.println("Connected to the WiFi network");
 }
 
 void loop() {
   float catDist = getSonar();
-  printDist(catDist);
 
   if (catDist != 0) { // Avoid 0 issue
     
@@ -51,6 +50,7 @@ void loop() {
       inDangerZone = true;
       startBuzzer();
       textOwner();
+      printDist(catDist);
     }
     
     else if (catDist > DANGER_DIST && inDangerZone) {
