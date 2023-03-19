@@ -77,22 +77,7 @@ void loop() {
     //sumAccInPeriod += catAcc;
     //numAccReadings++;
 
-    // Buzzer logic
-    if (catDist != 0) { // Avoid 0 issue
-      
-      if (catDist <= DANGER_DIST && !inDangerZone) {
-        inDangerZone = true;
-        startBuzzer();
-        if (doIFTTT) {
-          notifyOwner();
-        }
-      }
-      
-      else if (catDist > DANGER_DIST && inDangerZone) {
-        inDangerZone = false;
-        stopBuzzer();
-      }
-    } 
+    handleBuzzer(catDist);
 
     ultrasonicTimer = millis();
   }
@@ -120,6 +105,25 @@ void loop() {
   }
   
   // delay(100); // Wait 100ms between pings (about 20 pings/sec). 29ms should be the shortest delay between pings.
+}
+
+void handleBuzzer(float catDist) {
+    // Buzzer logic
+    if (catDist != 0) { // Avoid 0 issue
+      
+      if (catDist <= DANGER_DIST && !inDangerZone) {
+        inDangerZone = true;
+        startBuzzer();
+        if (doIFTTT) {
+          notifyOwner();
+        }
+      }
+      
+      else if (catDist > DANGER_DIST && inDangerZone) {
+        inDangerZone = false;
+        stopBuzzer();
+      }
+    } 
 }
 
 void sendData(float avgDist, float avgAcc, bool classification) {
@@ -195,7 +199,7 @@ bool remoteTriggered() {
     irrecv.resume(); // Receive the next value
   }
   
-  return (results.value == remoteTrigger);
+  return (val == remoteTrigger);
 }
 
 float getAcc() {
