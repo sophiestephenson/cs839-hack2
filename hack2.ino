@@ -2,8 +2,8 @@
 #define echoPin 14 // define EchoPin.
 #define buzzerPin 12 // define BuzzerPin.
 #define recvPin 15 // define ReceiverPin for IR remote.
-#define SDA 32
-#define SCL 33
+//#define SDA 32 // something for accelerometer
+//#define SCL 33 // something for accelerometer
 #define MAX_DISTANCE 200 // Maximum sensor distance is rated at 400-500cm.
 
 #include <WiFi.h>
@@ -17,7 +17,8 @@
 
 // CONFIG
 const bool doIFTTT = false; // notify the owner?
-const int period = 100; // each window is 1/10 of a second
+const int period = 200; // each window is 1/5 of a second
+const int ultrasonicMin = 100; // 100 ms min between ultrasonic readings
 const unsigned long remoteTrigger = 0xFF30CF; // the 1 button
 
 // STATE
@@ -26,6 +27,7 @@ bool inDangerZone = false;
 
 // DATA COLLECTION
 long timer = 0;
+long ultrasonicTimer = 0;
 float sumDistInPeriod = 0;
 int numDistReadings = 0;
 float sumAccInPeriod = 0;
@@ -53,9 +55,9 @@ void setup() {
 
   irrecv.enableIRIn(); // Start the IR receiver
 
-  Wire.begin(SDA, SCL); //attach the IIC pin
-  mpu6050.begin(); //initialize the MPU6050
-  mpu6050.calcGyroOffsets(true); //get the offsets value
+  //Wire.begin(SDA, SCL); //attach the IIC pin
+  //mpu6050.begin(); //initialize the MPU6050
+  //mpu6050.calcGyroOffsets(true); //get the offsets value
 
   if (doIFTTT) {
     setUpWifi();
@@ -63,14 +65,37 @@ void setup() {
 }
 
 void loop() {
-  // Data capture
-  float catDist = getSonar();
-  sumDistInPeriod += catDist;
-  numDistReadings++;
+  
+  // avoid too quick ultrasonic measurements
+  if (millis() - ultrasonicTimer > ultrasonicMin) {
+    // Data capture
+    float catDist = getSonar();
+    sumDistInPeriod += catDist;
+    numDistReadings++;
 
-  float catAcc = getAcc();
-  sumAccInPeriod += catAcc;
-  numAccReadings++;
+    //float catAcc = getAcc();
+    //sumAccInPeriod += catAcc;
+    //numAccReadings++;
+
+    // Buzzer logic
+    if (catDist != 0) { // Avoid 0 issue
+      
+      if (catDist <= DANGER_DIST && !inDangerZone) {
+        inDangerZone = true;
+        startBuzzer();
+        if (doIFTTT) {
+          notifyOwner();
+        }
+      }
+      
+      else if (catDist > DANGER_DIST && inDangerZone) {
+        inDangerZone = false;
+        stopBuzzer();
+      }
+    } 
+
+    ultrasonicTimer = millis();
+  }
 
   if (remoteTriggered()) {
     remoteTriggeredInPeriod = true;
@@ -81,36 +106,18 @@ void loop() {
 
     // Calculate average over the window & send data
     float avgDist = getAvg(sumDistInPeriod, numDistReadings);
-    float avgAcc = getAvg(sumAccInPeriod, numAccReadings);
-    sendData(avgDist, avgAcc, remoteTriggeredInPeriod);
+    //float avgAcc = getAvg(sumAccInPeriod, numAccReadings);
+    sendData(avgDist, 1, remoteTriggeredInPeriod);
     
     // Reset
-    float sumDistInPeriod = 0;
-    float numDistReadings = 0;
-    float sumAccInPeriod = 0;
-    float numAccReadings = 0;
-    bool remoteTriggeredInPeriod = false;
+    sumDistInPeriod = 0;
+    numDistReadings = 0;
+   // sumAccInPeriod = 0;
+    numAccReadings = 0;
+    remoteTriggeredInPeriod = false;
 
-    timer = millis()
+    timer = millis();
   }
-
-  // Buzzer logic
-  if (catDist != 0) { // Avoid 0 issue
-    
-    if (catDist <= DANGER_DIST && !inDangerZone) {
-      inDangerZone = true;
-      startBuzzer();
-      if (doIFTTT) {
-        notifyOwner();
-      }
-    }
-    
-    else if (catDist > DANGER_DIST && inDangerZone) {
-      inDangerZone = false;
-      stopBuzzer();
-    }
-
-  } 
   
   // delay(100); // Wait 100ms between pings (about 20 pings/sec). 29ms should be the shortest delay between pings.
 }
@@ -120,8 +127,8 @@ void sendData(float avgDist, float avgAcc, bool classification) {
   Serial.print(",");
   Serial.print(avgDist);
   Serial.print(",");
-  Serial.print(avgAcc);
-  Serial.print(",");
+ // Serial.print(avgAcc);
+ // Serial.print(",");
   Serial.println(classification);
 }
 
@@ -198,4 +205,4 @@ float getAcc() {
   az=mpu6050.getRawAccZ();//gain the values of Z axis acceleration raw data
   return (ax * ay * az) / 3;
 }
-}
+
