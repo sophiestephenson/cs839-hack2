@@ -32,7 +32,8 @@ float sumDistInPeriod = 0;
 int numDistReadings = 0;
 float sumAccInPeriod = 0;
 int numAccReadings = 0;
-bool remoteTriggeredInPeriod = false;
+bool stoppedInPeriod = false;
+bool startedInPeriod = false;
 
 // IR STUFF
 IRrecv irrecv(recvPin); // Create a class object used to receive class
@@ -82,8 +83,12 @@ void loop() {
     ultrasonicTimer = millis();
   }
 
-  if (remoteTriggered()) {
-    remoteTriggeredInPeriod = true;
+  String remote = remoteTriggered();
+  if (remote == "start") {
+    startedInPeriod = true;
+  }
+  else if (remote == "stop") {
+    stoppedInPeriod = true;
   }
 
   // Send data every period
@@ -91,15 +96,16 @@ void loop() {
 
     // Calculate average over the window & send data
     float avgDist = getAvg(sumDistInPeriod, numDistReadings);
-    //float avgAcc = getAvg(sumAccInPeriod, numAccReadings);
-    sendData(avgDist, 1, remoteTriggeredInPeriod);
+    //float avgAcc = getAvg(sumAccInPeriod, numAccReadings);    
+    sendData(avgDist, 1, startedInPeriod, stoppedInPeriod);
     
     // Reset
     sumDistInPeriod = 0;
     numDistReadings = 0;
    // sumAccInPeriod = 0;
     numAccReadings = 0;
-    remoteTriggeredInPeriod = false;
+    startedInPeriod = false;
+    stoppedInPeriod = false;
 
     timer = millis();
   }
@@ -126,7 +132,16 @@ void handleBuzzer(float catDist) {
     } 
 }
 
-void sendData(float avgDist, float avgAcc, bool classification) {
+void sendData(float avgDist, float avgAcc, bool startedInPeriod, bool stoppedInPeriod) {
+
+  String classification = "-";
+  if (startedInPeriod) {
+    classification = "start";
+  }
+  else if (stoppedInPeriod) {
+    classification = "stop";
+  }
+
   Serial.print(millis());
   Serial.print(",");
   Serial.print(avgDist);
@@ -191,15 +206,21 @@ float getSonar() {
   return distance; // return the distance value
 }
 
-bool remoteTriggered() {
+String remoteTriggered() {
   unsigned long val = 0;
 
   if (irrecv.decode(&results)) { // Waiting for decoding
     val = results.value;
     irrecv.resume(); // Receive the next value
   }
-  
-  return (val == remoteTrigger);
+
+  if (val == 0xFF02FD)
+    return "start";
+
+  if (val == 0xFF9867)
+    return "stop";
+
+  return "";
 }
 
 float getAcc() {
