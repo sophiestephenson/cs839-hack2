@@ -1,4 +1,10 @@
+import pickle
+
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
 import serial
+from sklearn.linear_model import LogisticRegression
 
 from utils import *
 
@@ -9,27 +15,34 @@ def send_prediction(prediction, ser):
     return
 
 if __name__ == "__main__":
+
+    print("Loading model...")
+
+    with open('model.pth', 'rb') as file:
+        model = pickle.load(file)
+    
+    print("Model loaded.")
     
     ser = serial.Serial(port, 9600) 
 
     curr_window = []
 
-    model = None
-
     while True:
         line = ser.readline().decode("utf-8").strip()
 
-        datapoint = handle_data(line)
+        isCat = False
+        datapoint = handle_training_data(line, isCat)
         if not datapoint:
             continue
     
-        curr_window.append(datapoint)
+        curr_window.append(datapoint["Distance"])
         if len(curr_window) >= timeseries_window:
             # keep at the specified window size
             curr_window.pop(0)
+        np_window = pad_sequence(curr_window, timeseries_window, max_dist)
 
-            prediction = model.predict(datapoint)
-            send_prediction(prediction, ser)
+        prediction = model.predict(np_window.reshape(-1,1))
+        send_prediction(prediction[0], ser)
 
 
 

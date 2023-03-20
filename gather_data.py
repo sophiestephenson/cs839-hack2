@@ -21,11 +21,9 @@ if __name__ == "__main__":
 
         ser = serial.Serial(port, 9600)
 
-        isCat = False
-
         while True:
             line = ser.readline().decode("utf-8").strip()
-            datapoint = handle_data(line)
+            datapoint = handle_training_data(line)
             if not datapoint:
                 continue
 

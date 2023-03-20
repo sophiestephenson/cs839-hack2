@@ -102,7 +102,6 @@ bool isInDangerZone() {
   } 
 
   return false;
-  
 }
 
 void handleBuzzer(float catDist) {
