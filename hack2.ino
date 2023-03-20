@@ -2,8 +2,6 @@
 #define echoPin 14 // define EchoPin.
 #define buzzerPin 12 // define BuzzerPin.
 #define recvPin 15 // define ReceiverPin for IR remote.
-//#define SDA 32 // something for accelerometer
-//#define SCL 33 // something for accelerometer
 #define MAX_DISTANCE 200 // Maximum sensor distance is rated at 400-500cm.
 
 #include <WiFi.h>
@@ -30,18 +28,12 @@ long timer = 0;
 long ultrasonicTimer = 0;
 float sumDistInPeriod = 0;
 int numDistReadings = 0;
-float sumAccInPeriod = 0;
-int numAccReadings = 0;
 bool stoppedInPeriod = false;
 bool startedInPeriod = false;
 
 // IR STUFF
 IRrecv irrecv(recvPin); // Create a class object used to receive class
 decode_results results; // Create a decoding results class object
-
-// ACC STUFF
-MPU6050 mpu6050(Wire);//Attach the IIC
-int16_t ax,ay,az;//define acceleration values of 3 axes
   
 // SONAR STUFF
 float timeOut = MAX_DISTANCE * 60;
@@ -56,10 +48,6 @@ void setup() {
 
   irrecv.enableIRIn(); // Start the IR receiver
 
-  //Wire.begin(SDA, SCL); //attach the IIC pin
-  //mpu6050.begin(); //initialize the MPU6050
-  //mpu6050.calcGyroOffsets(true); //get the offsets value
-
   if (doIFTTT) {
     setUpWifi();
   }
@@ -73,10 +61,6 @@ void loop() {
     float catDist = getSonar();
     sumDistInPeriod += catDist;
     numDistReadings++;
-
-    //float catAcc = getAcc();
-    //sumAccInPeriod += catAcc;
-    //numAccReadings++;
 
     handleBuzzer(catDist);
 
@@ -95,27 +79,37 @@ void loop() {
   if (millis() - timer > period) {
 
     // Calculate average over the window & send data
-    float avgDist = getAvg(sumDistInPeriod, numDistReadings);
-    //float avgAcc = getAvg(sumAccInPeriod, numAccReadings);    
+    float avgDist = getAvg(sumDistInPeriod, numDistReadings);  
     sendData(avgDist, 1, startedInPeriod, stoppedInPeriod);
     
     // Reset
     sumDistInPeriod = 0;
     numDistReadings = 0;
-   // sumAccInPeriod = 0;
-    numAccReadings = 0;
     startedInPeriod = false;
     stoppedInPeriod = false;
 
     timer = millis();
   }
+}
+
+bool isInDangerZone() {
+  // read prediction from the python
+  if(Serial.available() > 0) {
+    int prediction = Serial.parseInt();
+    Serial.print("Prediction:");
+    Serial.println(prediction);
+    return (prediction == 1);
+  } 
+
+  return false;
   
-  // delay(100); // Wait 100ms between pings (about 20 pings/sec). 29ms should be the shortest delay between pings.
 }
 
 void handleBuzzer(float catDist) {
     // Buzzer logic
     if (catDist != 0) { // Avoid 0 issue
+
+      inDangerZone = isInDangerZone();
       
       if (catDist <= DANGER_DIST && !inDangerZone) {
         inDangerZone = true;
@@ -146,8 +140,6 @@ void sendData(float avgDist, float avgAcc, bool startedInPeriod, bool stoppedInP
   Serial.print(",");
   Serial.print(avgDist);
   Serial.print(",");
- // Serial.print(avgAcc);
- // Serial.print(",");
   Serial.println(classification);
 }
 
@@ -221,13 +213,5 @@ String remoteTriggered() {
     return "stop";
 
   return "";
-}
-
-float getAcc() {
-  mpu6050.update();
-  ax=mpu6050.getRawAccX();//gain the values of X axis acceleration raw data
-  ay=mpu6050.getRawAccY();//gain the values of Y axis acceleration raw data
-  az=mpu6050.getRawAccZ();//gain the values of Z axis acceleration raw data
-  return (ax * ay * az) / 3;
 }
 
