@@ -4,7 +4,7 @@ from pprint import pprint
 import serial
 
 port = '/dev/cu.wchusbserial1110'
-fieldnames = ["ts", "dist", "cat"]
+fieldnames = ["Timestamp", "Distance", "Category"]
 outfile = "trainingdata.csv"
 
 startSymb = "start"
@@ -21,28 +21,37 @@ if __name__ == "__main__":
         csvwriter = csv.DictWriter(out, fieldnames=fieldnames)
         csvwriter.writeheader()
 
-    ser = serial.Serial(port, 9600)
+    with open(outfile, 'a') as out:
 
-    isCat = False
+        ser = serial.Serial(port, 9600)
 
-    while True:
-        line = ser.readline().decode("utf-8").strip()
-        pieces = line.split(",")
+        isCat = False
 
-        if len(pieces) < 3:
-            continue
+        while True:
+            line = ser.readline().decode("utf-8").strip()
+            pieces = line.split(",")
 
-        symbol = pieces[2]
-        if symbol == startSymb:
-            isCat = True
-        elif symbol == stopSymb:
-            isCat = False
+            if len(pieces) < 3:
+                continue
 
-        new_datapoint = dict(
-            ts = int(pieces[0]),
-            dist = float(pieces[1]), 
-            cat = int(isCat)
-        )
+            dist = float(pieces[1])
+            if dist == 0:
+                # 0 actually means it's at the max distance
+                dist = 200.0
 
-        write_to_csv(new_datapoint)
-        print(new_datapoint)
+            symbol = pieces[2]
+            if symbol == startSymb:
+                isCat = True
+            elif symbol == stopSymb:
+                isCat = False
+
+            new_datapoint = dict(
+                Timestamp = int(pieces[0]),
+                Distance = dist, 
+                Category = int(isCat)
+            )
+
+            #write_to_csv(new_datapoint)
+            csvwriter = csv.DictWriter(out, fieldnames=fieldnames)
+            csvwriter.writerow(new_datapoint)
+            print(new_datapoint)
