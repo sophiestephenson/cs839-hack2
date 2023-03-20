@@ -1,4 +1,5 @@
 import pickle
+from pprint import pprint
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -10,7 +11,7 @@ from utils import *
 
 
 def send_prediction(prediction, ser):
-    data += "{}\r\n".format(prediction)
+    data = "{}\r\n".format(prediction)
     ser.write(data.encode())
     return
 
@@ -36,13 +37,14 @@ if __name__ == "__main__":
             continue
     
         curr_window.append(datapoint["Distance"])
-        if len(curr_window) >= timeseries_window:
+        if len(curr_window) > timeseries_window:
             # keep at the specified window size
             curr_window.pop(0)
-        np_window = pad_sequence(curr_window, timeseries_window, max_dist)
+        np_window = pad_sequence(curr_window, timeseries_window-len(curr_window)+1, max_dist)
 
-        prediction = model.predict(np_window.reshape(-1,1))
+        prediction = model.predict(np_window.reshape(1,-1))
         send_prediction(prediction[0], ser)
+        print(np_window, prediction)
 
 
 
