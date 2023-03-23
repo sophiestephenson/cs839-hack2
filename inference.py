@@ -31,8 +31,7 @@ if __name__ == "__main__":
     while True:
         line = ser.readline().decode("utf-8").strip()
 
-        isCat = False
-        datapoint = handle_training_data(line, isCat)
+        datapoint = handle_inference_data(line)
         if not datapoint:
             continue
     

@@ -30,6 +30,7 @@ float sumDistInPeriod = 0;
 int numDistReadings = 0;
 bool stoppedInPeriod = false;
 bool startedInPeriod = false;
+bool buzzerOn = false;
 
 // IR STUFF
 IRrecv irrecv(recvPin); // Create a class object used to receive class
@@ -62,8 +63,6 @@ void loop() {
     sumDistInPeriod += catDist;
     numDistReadings++;
 
-    handleBuzzer(catDist);
-
     ultrasonicTimer = millis();
   }
 
@@ -77,6 +76,8 @@ void loop() {
 
   // Send data every period
   if (millis() - timer > period) {
+    updateDangerZone();
+    handleBuzzer();
 
     // Calculate average over the window & send data
     float avgDist = getAvg(sumDistInPeriod, numDistReadings);  
@@ -92,37 +93,33 @@ void loop() {
   }
 }
 
-bool isInDangerZone() {
+void updateDangerZone() {
   // read prediction from the python
   if(Serial.available() > 0) {
     int prediction = Serial.parseInt();
-    Serial.print("Prediction:");
-    Serial.println(prediction);
-    return (prediction == 1);
+    inDangerZone = (prediction == 1);
   } 
-
-  return false;
+  else { 
+    inDangerZone = false;
+  }
 }
 
-void handleBuzzer(float catDist) {
+void handleBuzzer() {
     // Buzzer logic
-    if (catDist != 0) { // Avoid 0 issue
-
-      inDangerZone = isInDangerZone();
-      
-      if (catDist <= DANGER_DIST && !inDangerZone) {
-        inDangerZone = true;
+    if (inDangerZone && !buzzerOn) {
         startBuzzer();
         if (doIFTTT) {
           notifyOwner();
         }
+        Serial.println("Buzzer on");
+        buzzerOn = true;
       }
       
-      else if (catDist > DANGER_DIST && inDangerZone) {
-        inDangerZone = false;
-        stopBuzzer();
-      }
-    } 
+    else if (!inDangerZone && buzzerOn) {
+      stopBuzzer();
+      Serial.println("Buzzer off");
+      buzzerOn = false;
+    }
 }
 
 void sendData(float avgDist, float avgAcc, bool startedInPeriod, bool stoppedInPeriod) {

@@ -1,6 +1,6 @@
 import numpy as np
 
-port = '/dev/cu.wchusbserial1110'
+port = '/dev/cu.wchusbserial110'
 fieldnames = ["Timestamp", "Distance", "Category"]
 outfile = "trainingdata.csv"
 
@@ -25,6 +25,7 @@ def read_serial(raw_serial_line):
     pieces = raw_serial_line.split(",")
 
     if len(pieces) < 2:
+        print(pieces)
         return None
 
     dist = float(pieces[1])
