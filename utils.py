@@ -1,6 +1,6 @@
 import numpy as np
 
-port = '/dev/cu.wchusbserial110'
+port = '/dev/cu.wchusbserial1110'
 fieldnames = ["Timestamp", "Distance", "Category"]
 outfile = "trainingdata.csv"
 
