@@ -1,24 +1,32 @@
-/*
-  modified on Sep 8, 2020
-  Modified by MohammedDamirchi from Arduino Examples
-  Home
-*/
+#include "AudioTools.h"
 
+uint16_t sample_rate=44100;
+uint8_t channels = 2;                                      // The stream will have 2 channels 
+AnalogAudioStream in; 
+CsvStream<int16_t> out(Serial); 
+ConverterAutoCenter<int16_t> center(2); // set avg to 0
 
-// the setup routine runs once when you press reset:
-void setup() {
-  // initialize serial communication at 9600 bits per second:
-  Serial.begin(9600);
+// Arduino Setup
+void setup(void) {  
+  // Open Serial 
+  Serial.begin(115200);
+  AudioLogger::instance().begin(Serial, AudioLogger::Info);
+
+  // Define CSV Output
+  auto config = out.defaultConfig();
+  config.sample_rate = sample_rate; 
+  config.channels = channels;
+  config.bits_per_sample = sizeof(int16_t)*8; 
+  out.begin(config);
+
+  // Setup sine wave
+  auto cfgRx = in.defaultConfig(RX_MODE);
+  cfgRx.sample_rate = sample_rate;
+  cfgRx.channels = channels;
+  in.begin(cfgRx); // frequency of note B4
 }
 
-// the loop routine runs over and over again forever:
+StreamCopy copier(out, in);                             
 void loop() {
-  // read the input on analog pin 0:
-  int sensorValue = analogRead(25);
-  // print out the value you read:
-  Serial.print(0);
-  Serial.print(" ");
-  Serial.print(4000);
-  Serial.print(" ");
-  Serial.println(sensorValue);
-  }
+  copier.copy(center);
+}
