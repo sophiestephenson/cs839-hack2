@@ -26,7 +26,6 @@ int status = WL_IDLE_STATUS;
 // Initialize the client library
 WiFiClientSecure client;
 
-/*
 void setupWifi() {
   Serial.println("Attempting to connect to WPA network...");
   Serial.print("SSID: ");
@@ -46,26 +45,26 @@ void sendfile() {
   const String url = "http://maker.ifttt.com/trigger/sensor_status/with/key/bc3z7e6-EAtEmsTx3FrdgJ";
 
   if ((WiFi.status() == WL_CONNECTED)) {
-    client.setInsecure();
-    if (!client.connect(url)) {
-      Serial.println("Connection failed");
-    } else {
-      client.println("POST " + url + " HTTP/1.0");
-      client.println(F("User-Agent: ESP"));
-      client.println(F("Content-Type: application/x-www-form-urlencoded;"));
-      File file = SPIFFS.open("/AudioFile01.wav");
-      client.print("Content-Length: ");
-      client.println(file.size());
-      client.write(file);
-    }
+    File file = SPIFFS.open("/AudioFile01.wav");
+
+    WiFiClientSecure *m_wifi_client = new WiFiClientSecure();
+    m_wifi_client->connect("api.wit.ai", 443);
+    m_wifi_client->println("POST /speech?v=20200927 HTTP/1.1");
+    m_wifi_client->println("host: api.wit.ai");
+    m_wifi_client->println("authorization: Bearer 6QVLPGAHBAV2AL55FZ4PDIXI2BYDLADR");
+    m_wifi_client->println("content-type: audio/wav;");
+    m_wifi_client->print("content-length: ");
+    m_wifi_client->println(file.size());
+    m_wifi_client->println();
+    m_wifi_client->write(file);
+    m_wifi_client->println();
   }
 }
-*/
 
 // Arduino Setup
 void setup(void) {
   Serial.begin(115200);
-  //setupWifi();
+  setupWifi();
 
   AudioLogger::instance().begin(Serial, AudioLogger::Debug);  // AudioLogger set to Debug mode
 
@@ -128,7 +127,7 @@ void setup(void) {
   Serial.println("FILE END");
   delay(5000);
 
-  //sendfile();
+  sendfile();
 }
 void loop() {
 }
