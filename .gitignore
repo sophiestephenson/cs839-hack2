@@ -3,3 +3,4 @@ __pycache__
 *.yaml
 arduino-wav-sdcard/
 idf-wav-sdcard/
+arduinosecrets.h
