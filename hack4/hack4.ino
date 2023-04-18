@@ -5,7 +5,6 @@
 #include "AudioTools.h"
 #include "SPIFFS.h"
 #include "arduinosecrets.h"
-#include "WAVFileWriter.h"
 
 I2SStream in;  // Access I2S as a stream
 
@@ -28,10 +27,6 @@ void setup() {
   
   SPIFFS.begin();
 
-  //Serial.println("starting out stream...");
-  //WAVEncoder *wavEncoder = new WAVEncoder();
-  //EncodedAudioStream out(&audioFile, wavEncoder);  // Access audioFile as a stream
-  //StreamCopy copier(out, in); 
 
   Serial.println("starting I2S...");
   auto config = in.defaultConfig(RX_MODE);
